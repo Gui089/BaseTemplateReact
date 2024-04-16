@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const fetchIssues = activeLabels => {
   const labelsParam = activeLabels.length === 0
@@ -69,8 +69,8 @@ const IssueItem = ({ state, title, createdAt, labels, author, url, onClickLabel 
   </li>
 
 
-const SearhIssues = () => 
-  <form>
+const SearhIssues = ({formRef, onSearchIssues}) => 
+  <form ref={formRef} onSubmit={onSearchIssues}>
     <input
       type='search'
       name='inputSearchIssues'
@@ -84,6 +84,17 @@ const SearhIssues = () =>
   </form>
 
 const IssuesList = ({activeLabels, onClickLabel}) => {
+  
+  const [serachItem, setSearchItem] = useState('');
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    if(serachItem.length > 0) {
+      formRef.current.reset();
+    }
+  }, [serachItem]);
+
+
   const {isError, isLoading, error, data, isSuccess} = useQuery({
     queryKey: ['issues', {activeLabels: activeLabels.map(({name}) => name)},  activeLabels],
     queryFn: () => fetchIssues(activeLabels),
@@ -91,13 +102,16 @@ const IssuesList = ({activeLabels, onClickLabel}) => {
     staleTime: Infinity}
     )
 
-  console.log(data);  
-
+  const searchIssues = e => {
+    e.preventDefault();
+    const { inputSearchIssues } = e.target.elements;
+    setSearchItem(inputSearchIssues.value);
+  }
 
   return (
     <div className='issuesListContainer'>
       <h1>Vagas</h1>
-      <SearhIssues />
+      <SearhIssues onSearchIssues={searchIssues} formRef={formRef} />
       {isError && <p>{error.message}</p>}
       {isLoading && <p>Carregando infos...</p>}
       {isSuccess && (
